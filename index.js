@@ -7,7 +7,7 @@ const bcryptjs = require('bcryptjs');
 const config = require('./config.json');
 const product = require('./products.json');
 const dbProduct = require('./models/products.js');
-const User = require('./models/users.js');
+const Product = require('./models/userProduct.js');
 
 const port = 3000;
 
@@ -53,22 +53,20 @@ app.get('/products/p=:id', (req, res) => {
     }
 });
 
-app.post('/registerUser', (req, res) => {
+app.post('/registerProduct', (req, res) => {
 
-    User.findOne({ username: req.body.username }, (err, userResult) => {
-        if (userResult) {
-            res.send('Username already taken');
+    Product.findOne({ productName: req.body.productName }, (err, productResult) => {
+        if (productResult) {
+            res.send('Product name already taken');
 
         } else {
-            const hash = bcryptjs.hashSync(req.body.password);
-            const user = new User({
+            const product = new Product({
                 _id: new mongoose.Types.ObjectId,
-                username: req.body.username,
-                email: req.body.email,
-                password: req.body.password,
-                password: hash
+                productName: req.body.productName,
+                productPrice: req.body.productPrice
+               
             });
-            user.save().then(result => {
+            product.save().then(result => {
                 res.send(result);
             }).catch(err => res.send(err));
         }
@@ -76,22 +74,22 @@ app.post('/registerUser', (req, res) => {
     })
 });
 
-app.get('/allUsers', (req,res)=>{
-    User.find().then(result =>{
-        res.send(result);
-    })
-});
+// app.get('/allUsers', (req,res)=>{
+//     User.find().then(result =>{
+//         res.send(result);
+//     })
+// });
 
-app.post('/loginUser', (req,res)=>{
-  User.findOne({username:req.body.username},(err,userResult)=>{
-    if (userResult){
-      if (bcryptjs.compareSync(req.body.password, userResult.password)){
-        res.send(userResult);
+app.post('/findProduct', (req,res)=>{
+  Product.findOne({productName:req.body.productName},(err,productResult)=>{
+    if (productResult){
+    //   if (bcryptjs.compareSync(req.body.password, userResult.password)){
+        res.send(productResult);
       } else {
-        res.send('not authorized');
-      }//inner if
-    } else {
-       res.send('user not found. Please register');
+        res.send('Product not found');
+    //   }//inner if
+    // } else {
+    //    res.send('user not found. Please register');
     }//outer if
   });//findOne
 });//post
