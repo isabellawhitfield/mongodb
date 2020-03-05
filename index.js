@@ -5,9 +5,9 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcryptjs = require('bcryptjs');
 const config = require('./config.json');
-const product = require('./products.json');
-const dbProduct = require('./models/products.js');
-const Product = require('./models/userProduct.js');
+// const product = require('./products.json');
+const User = require('./models/user.js');
+const Product = require('./models/products.js');
 
 const port = 3000;
 
@@ -38,9 +38,9 @@ app.use(cors());
 
 app.get('/', (req, res) => res.send('Hello World!'))
 
-app.get('/allProducts', (req, res) => {
-    res.json(product);
-});
+// app.get('/allProducts', (req, res) => {
+//     res.json(product);
+// });
 
 app.get('/products/p=:id', (req, res) => {
     const idParam = req.params.id;
@@ -63,7 +63,8 @@ app.post('/registerProduct', (req, res) => {
             const product = new Product({
                 _id: new mongoose.Types.ObjectId,
                 productName: req.body.productName,
-                productPrice: req.body.productPrice
+                productPrice: req.body.productPrice,
+                imageUrl : req.body.imageUrl
                
             });
             product.save().then(result => {
@@ -74,11 +75,43 @@ app.post('/registerProduct', (req, res) => {
     })
 });
 
-// app.get('/allUsers', (req,res)=>{
-//     User.find().then(result =>{
-//         res.send(result);
-//     })
-// });
+app.get('/allProducts', (req,res)=>{
+    Product.find().then(result =>{
+        res.send(result);
+    })
+});
+app.delete('/deleteProduct/:id', (req, res)=>{
+    const idParam = req.params.id;
+    Product.findOne({_id:idParam}, (err,product)=>{
+        if (product){
+            Product.deleteOne({_id:idParam}, err=>{
+                res.send('Deleted');
+            });
+
+        } else {
+            res.send('not found');
+        }
+
+    }).catch(err => res.send(err));
+});
+
+app.patch('/updatedProduct/:id', (req,res)=>{
+    const idParam = req.params.id;
+    Product.findById(idParam, (err, product)=>{
+        const updatedProduct = {
+            productName:req.body.name,
+            productPrice:req.body.price,
+            imageUrl:req.body.imageUrl
+        };
+        Product.updateOne({_id:idParam}, updatedProduct).then(result=>{
+            res.send(result);
+        }).catch(err=> res.send('not found'));
+
+    }).catch(err=>res.send('not found'));
+
+});
+
+
 
 app.post('/findProduct', (req,res)=>{
   Product.findOne({productName:req.body.productName},(err,productResult)=>{
@@ -93,6 +126,57 @@ app.post('/findProduct', (req,res)=>{
     }//outer if
   });//findOne
 });//post
+
+
+
+//register user
+app.post('/registerUser', (req,res)=>{
+    //checking if user is found in the db already
+    User.findOne({username:req.body.username},(err,userResult)=>{
+  
+      if (userResult){
+        res.send('username taken already. Please try another one');
+      } else{
+         const hash = bcryptjs.hashSync(req.body.password); //hash the password
+         const user = new User({
+           _id : new mongoose.Types.ObjectId,
+           username : req.body.username,
+           email : req.body.email,
+           password :hash
+         });
+         //save to database and notify the user accordingly
+         user.save().then(result =>{
+           res.send(result);
+         }).catch(err => res.send(err));
+      }
+  
+    })
+  
+  
+  });
+  
+  //get all user
+  app.get('/allUsers', (req,res)=>{
+    User.find().then(result =>{
+      res.send(result);
+    })
+  
+  });
+  
+  //login the user
+  app.post('/loginUser', (req,res)=>{
+    User.findOne({username:req.body.username},(err,userResult)=>{
+      if (userResult){
+        if (bcryptjs.compareSync(req.body.password, userResult.password)){
+          res.send(userResult);
+        } else {
+          res.send('not authorized');
+        }//inner if
+      } else {
+         res.send('user not found. Please register');
+      }//outer if
+    });//findOne
+  });//post
 
 
 
